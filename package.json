@@ -1,15 +1,16 @@
 {
   "name": "nishantverse-api",
   "version": "1.0.0",
-  "main": "index.js",
+  "type": "module",
+  "description": "NishantVerse Music Streaming API",
+  "main": "api/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node api/index.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
   "dependencies": {
     "@distube/ytdl-core": "^4.16.12"
+  },
+  "engines": {
+    "node": "18.x"
   }
 }
