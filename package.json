@@ -2,14 +2,7 @@
   "name": "nishantverse-api",
   "version": "1.0.0",
   "type": "module",
-  "description": "NishantVerse Music Streaming API",
   "main": "api/index.js",
-  "scripts": {
-    "start": "node api/index.js"
-  },
-  "dependencies": {
-    "@distube/ytdl-core": "^4.16.12"
-  },
   "engines": {
     "node": "24.x"
   }
