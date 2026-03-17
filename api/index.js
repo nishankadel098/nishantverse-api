@@ -5,44 +5,46 @@ export default async function handler(req, res) {
     if (req.method === 'OPTIONS') return res.status(200).end();
 
     const { id } = req.query;
-    if (!id) return res.status(400).json({ error: 'ID missing' });
+    if (!id) return res.status(400).json({ error: 'Bhai, YouTube ID missing hai' });
 
-    try {
-        // Hum Cobalt API use karenge jo sabse fast aur stable hai
-        const cobaltUrl = 'https://api.cobalt.tools/api/json';
-        
-        const response = await fetch(cobaltUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-            },
-            body: JSON.stringify({
-                url: `https://www.youtube.com/watch?v=${id}`,
-                downloadMode: 'audio',
-                audioFormat: 'mp3',
-                videoQuality: '720',
-                isAudioOnly: true
-            })
-        });
+    // Ye saare Piped ke top-tier working instances hain
+    const pipedInstances = [
+        'https://pipedapi.kavin.rocks',
+        'https://pipedapi.smnz.de',
+        'https://pipedapi.adminforge.de',
+        'https://piped-api.lunar.icu'
+    ];
 
-        const data = await response.json();
+    for (const instance of pipedInstances) {
+        try {
+            console.log(`Trying Piped instance: ${instance}`);
+            
+            const response = await fetch(`${instance}/streams/${id}`, {
+                headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36' },
+                signal: AbortSignal.timeout(6000) // 6 second timeout
+            });
 
-        if (data.status === 'stream' || data.status === 'redirect' || data.url) {
-            // Hum audio link mil gaya!
-            return res.redirect(307, data.url);
-        } else {
-            console.log("Cobalt Response:", data);
-            throw new Error('Link nahi mila');
+            if (!response.ok) continue;
+
+            const data = await response.json();
+
+            // Piped humein ekdum clean audio streams deta hai
+            if (data.audioStreams && data.audioStreams.length > 0) {
+                // Mobile app ke liye mp4/m4a sabse best aur fast hota hai
+                const bestAudio = data.audioStreams.find(stream => stream.mimeType.includes('mp4')) || data.audioStreams[0];
+                
+                // Direct Vercel se audio link par redirect
+                return res.redirect(307, bestAudio.url);
+            }
+        } catch (error) {
+            console.log(`Failed at ${instance}, trying next...`);
+            continue;
         }
-
-    } catch (error) {
-        console.error("FINAL_ERROR:", error.message);
-        
-        // Agar Cobalt fail ho toh hum ek last backup use karenge
-        return res.status(500).json({ 
-            error: 'NishantVerse Server Busy', 
-            message: 'Bhai, YouTube ki security aaj bahut zyada hai. Ek baar fir refresh karo.' 
-        });
     }
+
+    // Agar Vercel ne sab kuch block kar diya ho
+    return res.status(500).json({ 
+        error: "NishantVerse Server Blocked", 
+        message: "Bhai, Piped ke saare servers ne Vercel ko block kar diya. Humein render.com ya apna custom backend lagana padega." 
+    });
 }
