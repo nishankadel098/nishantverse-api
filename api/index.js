@@ -8,30 +8,41 @@ export default async function handler(req, res) {
     if (!id) return res.status(400).json({ error: 'ID missing' });
 
     try {
-        // Hum ek public Invidious instance use karenge jo YouTube block nahi karta
-        const proxyUrl = `https://inv.tux.rs/api/v1/videos/${id}`;
+        // Hum Cobalt API use karenge jo sabse fast aur stable hai
+        const cobaltUrl = 'https://api.cobalt.tools/api/json';
         
-        const response = await fetch(proxyUrl);
+        const response = await fetch(cobaltUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({
+                url: `https://www.youtube.com/watch?v=${id}`,
+                downloadMode: 'audio',
+                audioFormat: 'mp3',
+                videoQuality: '720',
+                isAudioOnly: true
+            })
+        });
+
         const data = await response.json();
 
-        // Audio streams filter karna
-        const audioStreams = data.adaptiveFormats.filter(f => f.type.includes('audio'));
-        
-        if (audioStreams.length > 0) {
-            // Sabse best audio link par redirect karo
-            const bestAudio = audioStreams[audioStreams.length - 1].url;
-            return res.redirect(307, bestAudio);
+        if (data.status === 'stream' || data.status === 'redirect' || data.url) {
+            // Hum audio link mil gaya!
+            return res.redirect(307, data.url);
         } else {
-            return res.status(404).json({ error: 'Audio not found' });
+            console.log("Cobalt Response:", data);
+            throw new Error('Link nahi mila');
         }
 
     } catch (error) {
-        console.error("PROXY_ERROR:", error.message);
+        console.error("FINAL_ERROR:", error.message);
         
-        // Agar pehla proxy fail ho toh ye secondary source (Cobalt approach)
+        // Agar Cobalt fail ho toh hum ek last backup use karenge
         return res.status(500).json({ 
-            error: 'Server Error', 
-            message: 'Bhai, YouTube bahut tight security kar raha hai. Main alternative link dhund raha hoon.' 
+            error: 'NishantVerse Server Busy', 
+            message: 'Bhai, YouTube ki security aaj bahut zyada hai. Ek baar fir refresh karo.' 
         });
     }
 }
